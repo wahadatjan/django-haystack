@@ -199,7 +199,7 @@ class SolrSearchBackend(BaseSearchBackend):
     ):
         index = haystack.connections[self.connection_alias].get_unified_index()
 
-        kwargs = {"fl": "* score", "df": index.document_field}
+        kwargs = {"fl": "* score"}
 
         if fields:
             if isinstance(fields, (list, set)):
@@ -208,6 +208,14 @@ class SolrSearchBackend(BaseSearchBackend):
             kwargs["fl"] = fields
 
         if sort_by is not None:
+            # To support geodist() else solr will throw error with missing params for geodists() func
+            #  And this will allow sort using geosdit() directly instead of just "distance" keyword which doesn't co-allow/multiple other sort params
+            # e.g: we can do: results.order_by("-is_popular", "geodist()")
+            if distance_point:
+                # Do the geo-enabled sort.
+                lng, lat = distance_point['point'].coords
+                kwargs['sfield'] = distance_point['field']
+                kwargs['pt'] = '%s,%s' % (lat, lng)
             if sort_by in ["distance asc", "distance desc"] and distance_point:
                 # Do the geo-enabled sort.
                 lng, lat = distance_point["point"].coords
