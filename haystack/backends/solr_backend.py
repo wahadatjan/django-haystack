@@ -369,6 +369,11 @@ class SolrSearchBackend(BaseSearchBackend):
                 dwithin["field"],
                 dwithin["distance"].km,
             )
+            # Distance filter exclusion for some fields in the search index
+            # exclude virtual trials for distance filter
+            exclude_distance_query = getattr(settings, 'EXCLUDE_DISTANCE_FILTER_QUERY', None)
+            if exclude_distance_query:
+                geofilt = exclude_distance_query + " OR " + geofilt
             kwargs["fq"].append(geofilt)
 
         # Check to see if the backend should try to include distances
